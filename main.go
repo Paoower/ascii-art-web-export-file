@@ -25,6 +25,7 @@ func main() {
 
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/ascii", postHandler)
+	http.HandleFunc("/download", download)
 
 	log.Println(GREEN, "Server started at http://localhost:8080", NONE)
 	log.Fatal(http.ListenAndServe(":8080", nil))
@@ -116,6 +117,14 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Redirect to the home page after successful processing
 	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+func download(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		log.Printf("%v Bad request %v on %v page%v\n", RED, r.Method, r.URL.Path, NONE)
+		badRequestHandler(w)
+		return
+	}
 }
 
 func notFoundHandler(w http.ResponseWriter) {
