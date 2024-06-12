@@ -2,13 +2,13 @@ package main
 
 import (
 	asciiart "ascii-art-web/ascii-art"
-	"ascii-art-web/core"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 	"text/template"
 )
+
+var result []string
 
 const RED = "\033[31;1m"
 const GREEN = "\033[32;1m"
@@ -53,16 +53,8 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Read content from a file (e.g., content.txt) to display on the home page
-	f, err := os.ReadFile("content.txt")
-	if err != nil {
-		log.Printf("%v Error reading content file: %v%v", RED, err, NONE)
-		// If the content file is not found or inaccessible, proceed without displaying content
-	}
-
-	fileContent := string(f)
 	data := PageData{
-		Lines: strings.Split(fileContent, "\n"),
+		Lines: result,
 	}
 
 	// Execute the template with the provided data
@@ -103,15 +95,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate ASCII art based on input and style
-	output := asciiart.GetAscii(input, style)
-
-	// Save the generated ASCII art
-	err = core.Save(output)
-	if err != nil {
-		log.Printf("%v Error saving output: %v%v", RED, err, NONE)
-		internalServerErrorHandler(w)
-		return
-	}
+	result = asciiart.GetAscii(input, style)
 
 	log.Printf("%v POST request on /ascii successful %v", GREEN, NONE)
 
@@ -125,6 +109,16 @@ func download(w http.ResponseWriter, r *http.Request) {
 		badRequestHandler(w)
 		return
 	}
+
+	s := ""
+	for _, l := range result {
+		s += l + "\n"
+	}
+
+	w.Header().Set("Content-Type", "Plain text")
+	w.Header().Set("Content-Disposition", `attachment, filename="output.txt"`)
+	w.Write([]byte(strings.Replace(string(s), "&nbsp;", " ", -1)))
+
 }
 
 func notFoundHandler(w http.ResponseWriter) {
