@@ -4,6 +4,7 @@ import (
 	asciiart "ascii-art-web/ascii-art"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"text/template"
 )
@@ -58,7 +59,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := PageData{
-		Lines: "\n" + result,
+		Lines: result,
 	}
 
 	// Execute the template with the provided data
@@ -104,7 +105,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		internalServerErrorHandler(w, err)
 		return
 	}
-	result = output
+	result = "\n" + output
 
 	log.Printf("%v POST request on /ascii successful %v", GREEN, NONE)
 
@@ -119,10 +120,11 @@ func download(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "Plain text")
-	w.Header().Set("Content-Disposition", `attachment, filename="output.txt"`)
+	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
+	w.Header().Set("Content-Disposition", "attachment; filename=output.txt")
+	w.Header().Set("Content-Length", strconv.Itoa(len(result)))
 	w.Write([]byte(strings.Replace(result, "&nbsp;", " ", -1)))
-
+	result = ""
 }
 
 func notFoundHandler(w http.ResponseWriter) {
