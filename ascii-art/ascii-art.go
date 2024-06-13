@@ -27,8 +27,12 @@ func GetAscii(input, style string) (string, error) {
 	}
 
 	str := ""
-	for _, l := range lines {
-		str += l + "\n"
+	for i, l := range lines {
+		if i != len(lines)-1 {
+			str += l + "\n"
+			continue
+		}
+		str += l
 	}
 
 	return str, nil
