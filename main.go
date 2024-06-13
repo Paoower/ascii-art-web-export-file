@@ -8,7 +8,7 @@ import (
 	"text/template"
 )
 
-var result []string
+var result string
 
 const RED = "\033[31;1m"
 const GREEN = "\033[32;1m"
@@ -16,7 +16,11 @@ const YELLOW = "\033[33;1m"
 const NONE = "\033[0m"
 
 type PageData struct {
-	Lines []string
+	Lines string
+}
+
+type ErrorData struct {
+	Error error
 }
 
 func main() {
@@ -49,19 +53,19 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	t, err := template.ParseFiles("templates/index.html")
 	if err != nil {
 		log.Printf("%v Error parsing home template: %v%v", RED, err, NONE)
-		internalServerErrorHandler(w)
+		internalServerErrorHandler(w, err)
 		return
 	}
 
 	data := PageData{
-		Lines: result,
+		Lines: "\n" + result,
 	}
 
 	// Execute the template with the provided data
 	err = t.Execute(w, data)
 	if err != nil {
 		log.Printf("%v Error executing home template: %v%v", RED, err, NONE)
-		internalServerErrorHandler(w)
+		internalServerErrorHandler(w, err)
 		return
 	}
 }
@@ -78,7 +82,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		log.Printf("%v Error parsing data form: %v%v", RED, err, NONE)
-		internalServerErrorHandler(w)
+		internalServerErrorHandler(w, err)
 		return
 	}
 
@@ -90,12 +94,17 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 
 	if style == "" {
 		log.Printf("%v No banner provided: style: %s%v\n", RED, style, NONE)
-		internalServerErrorHandler(w)
+		internalServerErrorHandler(w, err)
 		return
 	}
 
 	// Generate ASCII art based on input and style
-	result = asciiart.GetAscii(input, style)
+	output, err := asciiart.GetAscii(input, style)
+	if err != nil {
+		internalServerErrorHandler(w, err)
+		return
+	}
+	result = output
 
 	log.Printf("%v POST request on /ascii successful %v", GREEN, NONE)
 
@@ -110,14 +119,9 @@ func download(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s := ""
-	for _, l := range result {
-		s += l + "\n"
-	}
-
 	w.Header().Set("Content-Type", "Plain text")
 	w.Header().Set("Content-Disposition", `attachment, filename="output.txt"`)
-	w.Write([]byte(strings.Replace(string(s), "&nbsp;", " ", -1)))
+	w.Write([]byte(strings.Replace(result, "&nbsp;", " ", -1)))
 
 }
 
@@ -129,7 +133,7 @@ func notFoundHandler(w http.ResponseWriter) {
 	t, err := template.ParseFiles("templates/404.html")
 	if err != nil {
 		log.Printf("%v Error executing 404 template: %v%v", RED, err, NONE)
-		internalServerErrorHandler(w)
+		internalServerErrorHandler(w, err)
 		return
 	}
 
@@ -137,7 +141,7 @@ func notFoundHandler(w http.ResponseWriter) {
 	err = t.Execute(w, nil)
 	if err != nil {
 		log.Printf("%v Error executing 404 template: %v%v", RED, err, NONE)
-		internalServerErrorHandler(w)
+		internalServerErrorHandler(w, err)
 		return
 	}
 }
@@ -150,7 +154,7 @@ func badRequestHandler(w http.ResponseWriter) {
 	t, err := template.ParseFiles("templates/400.html")
 	if err != nil {
 		log.Printf("%v Error executing 400 template: %v%v", RED, err, NONE)
-		internalServerErrorHandler(w)
+		internalServerErrorHandler(w, err)
 		return
 	}
 
@@ -158,12 +162,12 @@ func badRequestHandler(w http.ResponseWriter) {
 	err = t.Execute(w, nil)
 	if err != nil {
 		log.Printf("%v Error executing 400 template: %v%v", RED, err, NONE)
-		internalServerErrorHandler(w)
+		internalServerErrorHandler(w, err)
 		return
 	}
 }
 
-func internalServerErrorHandler(w http.ResponseWriter) {
+func internalServerErrorHandler(w http.ResponseWriter, erro error) {
 	// Send 500 code
 	w.WriteHeader(http.StatusInternalServerError)
 
@@ -175,8 +179,12 @@ func internalServerErrorHandler(w http.ResponseWriter) {
 		return
 	}
 
+	errorData := ErrorData{
+		Error: erro,
+	}
+
 	// Execute the 500 template
-	err = t.Execute(w, nil)
+	err = t.Execute(w, errorData)
 	if err != nil {
 		log.Printf("Error executing 500 template: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)

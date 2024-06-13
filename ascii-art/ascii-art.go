@@ -5,11 +5,11 @@ import (
 	"strings"
 )
 
-func GetAscii(input, style string) []string {
+func GetAscii(input, style string) (string, error) {
 	bannerFile, err := GetBannerFile(style)
 	if err != nil {
 		fmt.Println("Error:", err)
-		return []string{}
+		return "", err
 	}
 	lines := make([]string, 0)
 	words := strings.Split(input, "\n")
@@ -19,12 +19,17 @@ func GetAscii(input, style string) []string {
 			lines = append(lines, "")
 			continue
 		}
-		lines = append(lines, GetWord(word, bannerFile)...)
+		w, err := GetWord(word, bannerFile)
+		if err != nil {
+			return "", err
+		}
+		lines = append(lines, w...)
 	}
 
-	for i := 0; i < len(lines); i++ {
-		lines[i] = strings.ReplaceAll(lines[i], " ", "&nbsp;")
+	str := ""
+	for _, l := range lines {
+		str += l + "\n"
 	}
 
-	return lines
+	return str, nil
 }

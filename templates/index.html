@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer>
         window.onload = () => {
-            if (Array.from(document.getElementById("output").children)[4].innerHTML.length > 0) {
+            if (document.getElementById("output").innerHTML.length > 0) {
                 document.getElementById("download").disabled = false
                 document.getElementById("download").classList.add("bg-gradient-to-r", "text-white", "cursor-pointer")
                 document.getElementById("download").classList.remove("cursor-not-allowed", "bg-gray-300", "opacity-50")
@@ -60,17 +60,14 @@
 
         </div>
 
-        <div class="px-4 text-black bg-white shadow-lg rounded-lg p-4 md:max-w-screen-xl max-w-screen-xs overflow"
+        <div class="px-4 text-black bg-white shadow-lg rounded-lg p-4 md:max-w-screen-xl max-w-screen-xs overflow-x-auto"
             style="font-family: monospace;">
             <div class="flex justify-between">
                 <h1 class="text-xl">Output:</h1>
-
             </div>
-            <div id="output" class="break-words">
-                {{range .Lines}}
-                <p>{{.}}</p>
-                {{end}}
-            </div>
+            <pre id="output">
+                {{.Lines}}
+            </prev>
         </div>
     </div>
 </body>
